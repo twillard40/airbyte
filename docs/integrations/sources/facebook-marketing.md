@@ -7,31 +7,43 @@ This page guides you through the process of setting up the Facebook Marketing so
 - A [Facebook Ad Account ID](https://www.facebook.com/business/help/1492627900875762)
 - The credentials of your Facebook account with permission to access your ads account
 <!-- env:oss -->
-- (For Airbyte Open Source) A [Facebook app](https://developers.facebook.com/apps/) with the Marketing API enabled
+- (For Airbyte Open Source) A [Facebook app](https://developers.facebook.com/apps/) with the Marketing API enabled and the following permissions:
+  - ads_management
+  - ads_read
+  - business_management
+  - read_insights
 <!-- /env:oss -->
 
 ## Setup guide
 
 <!-- env:oss -->
 
-### (For Airbyte Open Source) Generate an access token and request a rate limit increase:
+### (For Airbyte Open Source) Create a Facebook App
 
-To set up Facebook Marketing as a source in Airbyte Open Source, you will first need to create a Facebook app and generate a Marketing API access token. You will then need to request a rate limit increase from Facebook. The following steps will guide you through this process:
+To set up Facebook Marketing as a source in Airbyte Open Source, you will need to create a Facebook app and generate a Marketing API access token. Use the links provided to navigate this setup process:
 
-1. Navigate to [Meta for Developers](https://developers.facebook.com/apps/) and follow the steps provided in the [Facebook documentation](https://developers.facebook.com/docs/development/create-an-app/) to create a Facebook app. Set the app type to **Business** when prompted.
-2. From your App’s dashboard, [set up the Marketing API](https://developers.facebook.com/docs/marketing-apis/get-started).
-3. Generate a Marketing API access token: From your App’s Dashboard, click **Marketing API** --> **Tools**. Select all the available token permissions (`ads_management`, `ads_read`, `read_insights`, `business_management`) and click **Get token**. Copy the generated token for later use.
-4. Request a rate limit increase: Facebook [heavily throttles](https://developers.facebook.com/docs/marketing-api/overview/authorization#limits) API tokens generated from Facebook apps with the default Standard Access tier, making it infeasible to use the token for syncs with Airbyte. You'll need to request an upgrade to Advanced Access for your app on the following permissions:
+1. Navigate to the [Meta for Developers Apps dashboard](https://developers.facebook.com/apps/) and follow the steps provided in the [Facebook documentation](https://developers.facebook.com/docs/development/create-an-app/) to create a Facebook app. Select **Other** as your use case, and set the app type to **Business** when prompted.
+2. From your App’s dashboard, find the **Marketing API** and click **Set up**.
+3. From the dashboard, select **Marketing API** --> **Tools**. Check all the available token permissions:
 
-   - Ads Management Standard Access
-   - ads_read
-   - Ads_management
+   - [ads_management](https://developers.facebook.com/docs/permissions#a)
+   - [ads_read](https://developers.facebook.com/docs/permissions#a)
+   - [read_insights](https://developers.facebook.com/docs/permissions#r)
 
-   See the Facebook [documentation on Authorization](https://developers.facebook.com/docs/marketing-api/overview/authorization/#access-levels) to request Advanced Access to the relevant permissions.
+   Click **Get token**. Make sure to copy and save the generated token in a secure location.
+
+4. Facebook [heavily throttles](https://developers.facebook.com/docs/marketing-api/overview/authorization#limits) API tokens generated from Facebook apps with the default Standard Access tier. You may need to request an upgrade to Advanced Access for your app on the following permissions:
+
+- ads_management
+- ads_read
+- business_management
+- read_insights
+
+From the Apps dashboard, select **App Review** > **Permissions and Features**. Select each permission and click **Request Advanced Access**. You will need to complete Facebook's [App review](https://developers.facebook.com/docs/app-review) and [business certification](https://www.facebook.com/business/help/2058515294227817?id=180505742745347) to obtain Advanced Access.
 
 <!-- /env:oss -->
 
-### Set up Facebook Marketing as a source in Airbyte:
+### Set up Facebook Marketing as a source in Airbyte
 
 1. [Log in to your Airbyte Cloud](https://cloud.airbyte.io/workspaces) account, or navigate to your Airbyte Open Source dashboard.
 2. In the left navigation bar, click **Sources**. In the top-right corner, click **+ New source**.
@@ -46,7 +58,7 @@ To set up Facebook Marketing as a source in Airbyte Open Source, you will first 
    **For Airbyte Open Source**: In the **Access Token** field, enter the access token you generated with your Facebook app.
    <!-- /env:oss -->
 
-#### Facebook Marketing Source Settings:
+#### Facebook Marketing Source Settings
 
 1. For **Account ID**, enter the [Facebook Ad Account ID Number](https://www.facebook.com/business/help/1492627900875762) to use when pulling data from the Facebook Marketing API. To find this ID, open your Meta Ads Manager. The Ad Account ID number is in the **Account** dropdown menu or in your browser's address bar. Refer to the [Facebook docs](https://www.facebook.com/business/help/1492627900875762) for more information.
 2. (Optional) For **Start Date**, use the provided datepicker, or enter the date programmatically in the `YYYY-MM-DDTHH:mm:ssZ` format. If not set then all data will be replicated for usual streams and only last 2 years for insight streams.
