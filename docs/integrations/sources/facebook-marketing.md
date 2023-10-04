@@ -5,13 +5,21 @@ This page guides you through the process of setting up the Facebook Marketing so
 ## Prerequisites
 
 - A [Facebook Ad Account ID](https://www.facebook.com/business/help/1492627900875762)
-- The credentials of your Facebook account with permission to access your ads account
+
+<!-- env:cloud -->
+- (For **Airbyte Cloud**) The credentials of an active Facebook account with the following permissions for the Ad account:
+  - [ads_management](https://developers.facebook.com/docs/permissions#a)
+  - [ads_read](https://developers.facebook.com/docs/permissions#a)
+  - [business_management](https://developers.facebook.com/docs/permissions#b)
+  - [read_insights](https://developers.facebook.com/docs/permissions#r)
+<!-- /env:cloud -->
+
 <!-- env:oss -->
-- (For Airbyte Open Source) A [Facebook app](https://developers.facebook.com/apps/) with the Marketing API enabled and the following permissions:
-  - ads_management
-  - ads_read
-  - business_management
-  - read_insights
+- (For **Airbyte Open Source**) A [Facebook app](https://developers.facebook.com/apps/) with the Marketing API enabled and the following permissions:
+  - [ads_management](https://developers.facebook.com/docs/permissions#a)
+  - [ads_read](https://developers.facebook.com/docs/permissions#a)
+  - [business_management](https://developers.facebook.com/docs/permissions#b)
+  - [read_insights](https://developers.facebook.com/docs/permissions#r)
 <!-- /env:oss -->
 
 ## Setup guide
@@ -20,26 +28,25 @@ This page guides you through the process of setting up the Facebook Marketing so
 
 ### (For Airbyte Open Source) Create a Facebook App
 
-To set up Facebook Marketing as a source in Airbyte Open Source, you will need to create a Facebook app and generate a Marketing API access token. Use the links provided to navigate this setup process:
-
-1. Navigate to the [Meta for Developers Apps dashboard](https://developers.facebook.com/apps/) and follow the steps provided in the [Facebook documentation](https://developers.facebook.com/docs/development/create-an-app/) to create a Facebook app. Select **Other** as your use case, and set the app type to **Business** when prompted.
+1. Navigate to the [Meta for Developers Apps dashboard](https://developers.facebook.com/apps/) and follow the steps provided in the [Facebook documentation](https://developers.facebook.com/docs/development/create-an-app/) to create a Facebook app. Select **Other** as your use case, and set the app type to [**Business**](https://developers.facebook.com/docs/development/create-an-app/app-dashboard/app-types#business) when prompted.
 2. From your App’s dashboard, find the **Marketing API** and click **Set up**.
-3. From the dashboard, select **Marketing API** --> **Tools**. Check all the available token permissions:
+3. Navigate to the [Explorer tool](https://developers.facebook.com/tools/explorer):
+    1. Select your app in the **Meta App** dropdown on the right.
+    2. Select **Get User Access Token** from the **User or Page** dropdown.
+    3. Add the following permissions:
+    - [ads_management](https://developers.facebook.com/docs/permissions#a)
+    - [ads_read](https://developers.facebook.com/docs/permissions#a)
+    - [business_management](https://developers.facebook.com/docs/permissions#b)
+    - [read_insights](https://developers.facebook.com/docs/permissions#r)
+    4. Click **Generate Access Token**. Be sure to copy and save the token in a secure location.
 
-   - [ads_management](https://developers.facebook.com/docs/permissions#a)
-   - [ads_read](https://developers.facebook.com/docs/permissions#a)
-   - [read_insights](https://developers.facebook.com/docs/permissions#r)
+4. Go to the [Access Token Tool](https://developers.facebook.com/tools/accesstoken). Click **Debug** for the access token you just generated.
 
-   Click **Get token**. Make sure to copy and save the generated token in a secure location.
+5. Facebook heavily throttles access to the Graph API for apps with Standard Access. To avoid encountering rate limiting issues, you may need to request [Advanced Access](https://developers.facebook.com/docs/graph-api/overview/access-levels#advanced-access) for the permissions listed above. From the Apps dashboard, select **App Review** > **Permissions and Features**. Select **Request Advanced Access** for each permission. At the time of writing, Advanced Access can only be obtained after completing Facebook's [Business Verification](https://developers.facebook.com/docs/development/release/business-verification) process.
 
-4. Facebook [heavily throttles](https://developers.facebook.com/docs/marketing-api/overview/authorization#limits) API tokens generated from Facebook apps with the default Standard Access tier. You may need to request an upgrade to Advanced Access for your app on the following permissions:
-
-- ads_management
-- ads_read
-- business_management
-- read_insights
-
-From the Apps dashboard, select **App Review** > **Permissions and Features**. Select each permission and click **Request Advanced Access**. You will need to complete Facebook's [App review](https://developers.facebook.com/docs/app-review) and [business certification](https://www.facebook.com/business/help/2058515294227817?id=180505742745347) to obtain Advanced Access.
+:::tip
+You can use the [Access Token Tool](https://developers.facebook.com/tools/accesstoken) at any time to view your existing access tokens, including their assigned permissions and lifecycles.
+:::
 
 <!-- /env:oss -->
 
@@ -52,7 +59,7 @@ From the Apps dashboard, select **App Review** > **Permissions and Features**. S
 5. To authenticate the connection:
 
    <!-- env:cloud -->
-   **For Airbyte Cloud**: Click **Authenticate your account** to authorize your Facebook account. Make sure you are logged into the right account, as Airbyte will authenticate the account you are currently logged in to.
+   **For Airbyte Cloud**: Click **Authenticate your Facebook Marketing account**. Log in to the Facebook Account with access to the Ad account ID. 
    <!-- /env:cloud -->
    <!-- env:oss -->
    **For Airbyte Open Source**: In the **Access Token** field, enter the access token you generated with your Facebook app.
