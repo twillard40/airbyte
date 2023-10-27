@@ -984,3 +984,149 @@ class UserLocationPerformanceReportWeekly(UserLocationPerformanceReport):
 
 class UserLocationPerformanceReportMonthly(UserLocationPerformanceReport):
     report_aggregation = "Monthly"
+
+
+class ProductDimensionPerformanceReport(PerformanceReportsMixin, BingAdsStream, ABC):
+    data_field: str = ""
+    service_name: str = "ReportingService"
+    report_name: str = "ProductDimensionPerformanceReport"
+    operation_name: str = "download_report"
+    additional_fields: str = ""
+    cursor_field = "TimePeriod"
+    report_schema_name = "product_dimension_performance_report"
+    # TODO: check primary key
+    primary_key = [
+        # "AccountId",
+        # "AdGroupId",
+        # "CampaignId",
+        # "DeliveredMatchType",
+        # "DeviceOS",
+        # "DeviceType",
+        # "Language",
+        # "LocationId",
+        # "QueryIntentLocationId",
+        # "TimePeriod",
+        # "TopVsOther",
+    ]
+
+    @property
+    def report_columns(self) -> List[str]:
+        # return list(self.get_json_schema().get("properties", {}).keys())
+        # TODO: check columns to request
+        return [
+            "TimePeriod",
+            "AccountName",
+            "AccountNumber",
+            "AdGroupName",
+            "AdGroupId",
+            "CampaignStatus",
+            "AccountStatus",
+            "AdGroupStatus",
+            "Network",
+            "AdId",
+            "CampaignId",
+            "CampaignName",
+            "CurrencyCode",
+            "DeviceType",
+            "Language",
+            "MerchantProductId",
+            "Title",
+            "Condition",
+            "Brand",
+            "Price",
+            # "CustomLabel0",
+            # "CustomLabel1",
+            # "CustomLabel2",
+            # "CustomLabel3",
+            # "CustomLabel4",
+            # "ProductType1",
+            # "ProductType2",
+            # "ProductType3",
+            # "ProductType4",
+            # "ProductType5",
+            # "ProductCategory1",
+            # "ProductCategory2",
+            # "ProductCategory3",
+            # "ProductCategory4",
+            # "ProductCategory5",
+            # "Impressions",
+            # "Clicks",
+            "Ctr",
+            # "AverageCpc",
+            # "Spend",
+            # "Conversions",
+            # "ConversionRate",
+            # "Revenue",
+            # "RevenuePerConversion",
+            # "SellerName",
+            # "OfferLanguage",
+            # "CountryOfSale",
+            # "AdStatus",
+            # # "ImpressionSharePercent",
+            # # "ImpressionLostToBudgetPercent",
+            # # "ImpressionLostToRankPercent",
+            # # "BenchmarkBid",
+            # # "BenchmarkCtr",
+            # "TopVsOther",
+            # "AdDistribution",
+            # "ClickTypeId",
+            # "TotalClicksOnAdElements",
+            # "ClickType",
+            # "ReturnOnAdSpend",
+            # "BidStrategyType",
+            # "LocalStoreCode",
+            # "StoreId",
+            # "AssistedImpressions",
+            # "AssistedClicks",
+            # # "ClickSharePercent",
+            # # "AbsoluteTopImpressionSharePercent",
+            # "AssistedConversions",
+            # "AllConversions",
+            # "AllRevenue",
+            # "AllConversionRate",
+            # "AllCostPerConversion",
+            # "AllReturnOnAdSpend",
+            # "AllRevenuePerConversion",
+            # "CostPerConversion",
+            # "ViewThroughConversions",
+            # "Goal",
+            # "GoalType",
+            # "ProductBought",
+            # "QuantityBought",
+            # "AbsoluteTopImpressionRatePercent",
+            # "AverageCpm",
+            # "ConversionsQualified",
+            # "AssistedConversionsQualified",
+            # "AllConversionsQualified",
+            # "ViewThroughConversionsQualified",
+            # "ProductBoughtTitle",
+            # "GTIN",
+            # "MPN",
+            # "ViewThroughRevenue",
+            # "GoalId",
+            # "Sales",
+            # "CostPerSale",
+            # "RevenuePerSale",
+            # "Installs",
+            # "CostPerInstall",
+            # "RevenuePerInstall",
+            # "CampaignType",
+            # "AssetGroupId",
+            # "AssetGroupName",
+            # "AssetGroupStatus",
+        ]
+
+class ProductDimensionPerformanceReportHourly(ProductDimensionPerformanceReport):
+    report_aggregation = "Hourly"
+
+
+class ProductDimensionPerformanceReportDaily(ProductDimensionPerformanceReport):
+    report_aggregation = "Daily"
+
+
+class ProductDimensionPerformanceReportWeekly(ProductDimensionPerformanceReport):
+    report_aggregation = "Weekly"
+
+
+class ProductDimensionPerformanceReportMonthly(ProductDimensionPerformanceReport):
+    report_aggregation = "Monthly"
