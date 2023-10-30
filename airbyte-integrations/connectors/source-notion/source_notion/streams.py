@@ -16,6 +16,8 @@ from airbyte_cdk.sources.streams.http import HttpStream, HttpSubStream
 from airbyte_cdk.sources.streams.http.availability_strategy import HttpAvailabilityStrategy
 from airbyte_cdk.sources.streams.http.exceptions import UserDefinedBackoffException
 from requests import HTTPError
+import time
+import datetime
 
 from .utils import transform_properties
 
@@ -83,9 +85,8 @@ class NotionStream(HttpStream, ABC):
         """
         Notion's rate limit is approx. 3 requests per second, with larger bursts allowed.
         For a 429 response, we can use the retry-header to determine how long to wait before retrying.
-        For 500-level errors, we use Airbyte CDK's default exponential backoff with a retry_factor of 8.
+        For 500-level errors, we use Airbyte CDK's default exponential backoff with a retry_factor of 5.
         Docs: https://developers.notion.com/reference/errors#rate-limiting
-
         """
         retry_after = response.headers.get("retry-after", "5")
         if response.status_code == 429:
@@ -121,6 +122,12 @@ class NotionStream(HttpStream, ABC):
             return {"next_cursor": next_cursor}
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+        # Notion API has a rate limit that is somewhat obtuse and not well documented.
+        # The docs simply state an approx rate limit of 3 seconds per request, with larger bursts allowed.
+        # However, there are alleged reports of a more concrete limit of 2700 requests per 15 minutes.
+        # To ensure we don't hit the rate limit regardless, we can add a 1/3 second delay between requests.
+        time.sleep(1/3)
+
         # sometimes notion api returns response without results object
         data = response.json().get("results", [])
         yield from data
