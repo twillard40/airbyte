@@ -122,11 +122,12 @@ class NotionStream(HttpStream, ABC):
             return {"next_cursor": next_cursor}
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        # Notion API has a rate limit that is somewhat obtuse and not well documented.
+        # Notion API has a rate limit that is somewhat obtuse and not well-documented.
         # The docs simply state an approx rate limit of 3 seconds per request, with larger bursts allowed.
-        # However, there are alleged reports of a more concrete limit of 2700 requests per 15 minutes.
-        # To ensure we don't hit the rate limit regardless, we can add a 1/3 second delay between requests.
-        time.sleep(1/3)
+        # However, there are alleged reports of a more concrete limit of 2700 requests per 15 minutes
+        # source: https://www.reddit.com/r/Notion/comments/xfufed/how_do_you_handle_request_limits_using_notion_api/
+        # To ensure we don't hit the rate limit regardless, we can add a .34 second delay between requests.
+        time.sleep(.34)
 
         # sometimes notion api returns response without results object
         data = response.json().get("results", [])
