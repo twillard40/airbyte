@@ -10,7 +10,7 @@ from typing import Any, Iterable, List, Mapping, MutableMapping, Optional
 import requests
 from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams.core import StreamData
-from airbyte_cdk.sources.streams.http import HttpStream
+from airbyte_cdk.sources.streams.http import HttpStream, HttpSubStream
 
 logger = logging.getLogger("airbyte")
 
@@ -258,6 +258,34 @@ class EmailActivity(IncrementalMailChimpStream):
         for item in data:
             for activity_item in item.pop("activity", []):
                 yield {**item, **activity_item}
+
+
+class Interests(MailChimpListSubStream, HttpSubStream):
+    """
+    Get a list of interests for a specific interest category.
+    Docs link: https://mailchimp.com/developer/marketing/api/interests/list-interests-in-category/
+    """
+
+    cursor_field = ""
+    data_field = "interests"
+        
+    def stream_slices(self, **kwargs) -> Iterable[Optional[Mapping[str, Any]]]:
+        """
+        Each slice consists of an interest_category_id and list_id pair.
+        """
+
+        parent_stream_slices = self.parent.stream_slices(sync_mode=SyncMode.full_refresh)
+
+        for stream_slice in parent_stream_slices:
+            parent_records = self.parent.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice)
+
+            for record in parent_records:
+                yield {"list_id": record["list_id"], "interest_category_id": record["id"]}
+
+    def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
+        list_id = stream_slice.get("list_id")
+        interest_category_id = stream_slice.get("interest_category_id")
+        return f"lists/{list_id}/interest-categories/{interest_category_id}/interests"
 
 
 class InterestCategories(MailChimpListSubStream):
