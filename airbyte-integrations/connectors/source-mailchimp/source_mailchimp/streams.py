@@ -260,6 +260,20 @@ class EmailActivity(IncrementalMailChimpStream):
                 yield {**item, **activity_item}
 
 
+class InterestCategories(MailChimpListSubStream):
+    """
+    Get information about interest categories for a specific list.
+    Docs link: https://mailchimp.com/developer/marketing/api/interest-categories/list-interest-categories/
+    """
+
+    cursor_field = ""
+    data_field = "categories"
+
+    def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
+        list_id = stream_slice.get("list_id")
+        return f"lists/{list_id}/interest-{self.data_field}"
+
+
 class ListMembers(MailChimpListSubStream):
     """
     Get information about members in a specific Mailchimp list.
