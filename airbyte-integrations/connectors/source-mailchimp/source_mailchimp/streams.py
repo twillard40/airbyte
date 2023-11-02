@@ -130,11 +130,16 @@ class MailChimpListSubStream(IncrementalMailChimpStream):
     Base class for incremental Mailchimp streams that are children of the Lists stream.
     """
 
+    def __init__(self, parent: HttpStream, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.parent = parent
+
     def stream_slices(self, stream_state: Mapping[str, Any] = None, **kwargs) -> Iterable[Optional[Mapping[str, Any]]]:
         stream_state = stream_state or {}
-        parent = Lists(authenticator=self.authenticator).read_records(sync_mode=SyncMode.full_refresh)
-        for slice in parent:
-            yield {"list_id": slice["id"]}
+        parent_records = self.parent.read_records(sync_mode=SyncMode.full_refresh)
+
+        for record in parent_records:
+            yield {"list_id": record["id"]}
 
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         list_id = stream_slice.get("list_id")
@@ -260,14 +265,18 @@ class EmailActivity(IncrementalMailChimpStream):
                 yield {**item, **activity_item}
 
 
-class Interests(MailChimpListSubStream, HttpSubStream):
+class Interests(MailChimpListSubStream):
     """
     Get a list of interests for a specific interest category.
+    This stream has no applicable cursor field, so it is not incremental.
     Docs link: https://mailchimp.com/developer/marketing/api/interests/list-interests-in-category/
     """
 
-    cursor_field = ""
     data_field = "interests"
+
+    @property
+    def cursor_field(self) -> None:
+        pass
         
     def stream_slices(self, **kwargs) -> Iterable[Optional[Mapping[str, Any]]]:
         """
@@ -286,20 +295,38 @@ class Interests(MailChimpListSubStream, HttpSubStream):
         list_id = stream_slice.get("list_id")
         interest_category_id = stream_slice.get("interest_category_id")
         return f"lists/{list_id}/interest-categories/{interest_category_id}/interests"
+    
+    def request_params(self, stream_state=None, stream_slice=None, **kwargs) -> MutableMapping[str, Any]:
+        params = super().request_params(stream_state, stream_slice, **kwargs)
+        # Remove sorting params that are not supported by this endpoint
+        params.pop("sort_field", None)
+        params.pop("sort_dir", None)
+        return params
 
 
 class InterestCategories(MailChimpListSubStream):
     """
     Get information about interest categories for a specific list.
+    This stream has no applicable cursor field, so it is not incremental.
     Docs link: https://mailchimp.com/developer/marketing/api/interest-categories/list-interest-categories/
     """
 
-    cursor_field = ""
     data_field = "categories"
+
+    @property
+    def cursor_field(self) -> None:
+        pass
 
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         list_id = stream_slice.get("list_id")
-        return f"lists/{list_id}/interest-{self.data_field}"
+        return f"lists/{list_id}/interest-categories"
+    
+    def request_params(self, stream_state=None, stream_slice=None, **kwargs) -> MutableMapping[str, Any]:
+        params = super().request_params(stream_state, stream_slice, **kwargs)
+        # Remove sorting params that are not supported by this endpoint
+        params.pop("sort_field", None)
+        params.pop("sort_dir", None)
+        return params
 
 
 class ListMembers(MailChimpListSubStream):

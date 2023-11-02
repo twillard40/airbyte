@@ -64,15 +64,37 @@ class SourceMailchimp(AbstractSource):
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
         authenticator = MailChimpAuthenticator().get_auth(config)
         campaign_id = config.get("campaign_id")
+
         return [
             Automations(authenticator=authenticator),
             Campaigns(authenticator=authenticator),
-            EmailActivity(authenticator=authenticator, campaign_id=campaign_id),
-            InterestCategories(authenticator=authenticator),
-            Interests(authenticator=authenticator, parent=InterestCategories(authenticator=authenticator)),
+            EmailActivity(
+                authenticator=authenticator, 
+                campaign_id=campaign_id
+            ),
+            InterestCategories(
+                authenticator=authenticator,
+                parent=Lists(authenticator=authenticator)
+            ),
+            Interests(
+                authenticator=authenticator, 
+                parent=InterestCategories(
+                    authenticator=authenticator, 
+                    parent=Lists(authenticator=authenticator)
+                )
+            ),
             Lists(authenticator=authenticator),
-            ListMembers(authenticator=authenticator),
+            ListMembers(
+                authenticator=authenticator, 
+                parent=Lists(authenticator=authenticator)
+            ),
             Reports(authenticator=authenticator),
-            Segments(authenticator=authenticator),
-            Unsubscribes(authenticator=authenticator, campaign_id=campaign_id),
+            Segments(
+                authenticator=authenticator, 
+                parent=Lists(authenticator=authenticator)
+            ),
+            Unsubscribes(
+                authenticator=authenticator, 
+                campaign_id=campaign_id
+            ),
         ]

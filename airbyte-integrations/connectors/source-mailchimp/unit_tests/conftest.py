@@ -4,7 +4,7 @@
 
 from pytest import fixture
 from source_mailchimp.source import MailChimpAuthenticator
-from source_mailchimp.streams import Campaigns, Unsubscribes
+from source_mailchimp.streams import Campaigns, Lists, Unsubscribes
 
 
 @fixture(name="data_center")
@@ -53,6 +53,9 @@ def authenticator_fixture(apikey_config):
 def campaigns_stream_fixture(auth):
     return Campaigns(authenticator=auth)
 
+@fixture(name="lists_stream")
+def lists_stream_fixture(auth):
+    return Lists(authenticator=auth)
 
 @fixture(name="unsubscribes_stream")
 def unsubscribes_stream_fixture(auth):

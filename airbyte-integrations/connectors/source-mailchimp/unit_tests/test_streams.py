@@ -10,7 +10,7 @@ import requests
 import responses
 from airbyte_cdk.models import SyncMode
 from requests.exceptions import HTTPError
-from source_mailchimp.streams import Campaigns, EmailActivity, ListMembers, Lists, Segments
+from source_mailchimp.streams import Campaigns, EmailActivity, InterestCategories, ListMembers, Lists, Segments
 from utils import read_full_refresh, read_incremental
 
 
@@ -24,6 +24,8 @@ from utils import read_full_refresh, read_incremental
 )
 def test_stream_read(requests_mock, auth, stream, endpoint):
     args = {"authenticator": auth}
+    if stream == Segments:
+        args["parent"] = Lists(**args)
     stream = stream(**args)
     stream_responses = [
         {
@@ -148,17 +150,30 @@ def test_stream_parse_json_error(auth, caplog):
                 "since_last_changed": "2023-10-15T00:00:00Z",
             },
         ),
+        (
+            InterestCategories,
+            {"list_id": "456"},
+            {},
+            {"offset": 3000},
+            {
+                "count": 1000,
+                "list_id": "456",
+                "offset": 3000,
+                "exclude_fields": "categories._links",
+            }
+        )
     ],
     ids=[
         "Segments: no next_page_token or state to add to request params",
         "ListMembers: next_page_token and state filter added to request params",
+        "InterestCategories: next_page_token added to request params"
     ],
 )
-def test_list_child_request_params(auth, stream_class, stream_slice, stream_state, next_page_token, expected_params):
+def test_list_child_request_params(auth, lists_stream, stream_class, stream_slice, stream_state, next_page_token, expected_params):
     """
     Tests the request_params method for the shared MailChimpListSubStream class.
     """
-    stream = stream_class(authenticator=auth)
+    stream = stream_class(authenticator=auth, parent=lists_stream)
     params = stream.request_params(stream_slice=stream_slice, stream_state=stream_state, next_page_token=next_page_token)
     assert params == expected_params
 
@@ -194,8 +209,8 @@ def test_list_child_get_updated_state(auth, stream_class, current_stream_state, 
     Tests that the get_updated_state method for the shared MailChimpListSubStream class
     correctly updates state only for its slice.
     """
-    segments_stream = stream_class(authenticator=auth)
-    updated_state = segments_stream.get_updated_state(current_stream_state, latest_record)
+    stream = stream_class(authenticator=auth, parent=Lists(authenticator=auth))
+    updated_state = stream.get_updated_state(current_stream_state, latest_record)
     assert updated_state == expected_state
 
 
