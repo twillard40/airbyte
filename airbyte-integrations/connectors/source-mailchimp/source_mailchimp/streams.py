@@ -10,7 +10,7 @@ from typing import Any, Iterable, List, Mapping, MutableMapping, Optional
 import requests
 from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams.core import StreamData
-from airbyte_cdk.sources.streams.http import HttpStream, HttpSubStream
+from airbyte_cdk.sources.streams.http import HttpStream
 
 logger = logging.getLogger("airbyte")
 
@@ -273,10 +273,8 @@ class Interests(MailChimpListSubStream):
     """
 
     data_field = "interests"
-
-    @property
-    def cursor_field(self) -> None:
-        pass
+    # There is no cursor field for this endpoint, so we set it to an empty list
+    cursor_field = []
         
     def stream_slices(self, **kwargs) -> Iterable[Optional[Mapping[str, Any]]]:
         """
@@ -312,10 +310,8 @@ class InterestCategories(MailChimpListSubStream):
     """
 
     data_field = "categories"
-
-    @property
-    def cursor_field(self) -> None:
-        pass
+    # There is no cursor field for this endpoint, so we set it to an empty list
+    cursor_field = []
 
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         list_id = stream_slice.get("list_id")
@@ -324,8 +320,8 @@ class InterestCategories(MailChimpListSubStream):
     def request_params(self, stream_state=None, stream_slice=None, **kwargs) -> MutableMapping[str, Any]:
         params = super().request_params(stream_state, stream_slice, **kwargs)
         # Remove sorting params that are not supported by this endpoint
-        params.pop("sort_field", None)
-        params.pop("sort_dir", None)
+        params.pop("sort_field")
+        params.pop("sort_dir")
         return params
 
 
@@ -345,6 +341,45 @@ class Reports(IncrementalMailChimpStream):
 
     def path(self, **kwargs) -> str:
         return "reports"
+    
+
+class SegmentMembers(MailChimpListSubStream):
+    """
+    Get information about members in a specific segment.
+    Docs link: https://mailchimp.com/developer/marketing/api/list-segment-members/list-members-in-segment/
+    """
+
+    cursor_field = "last_changed"
+    data_field = "members"
+
+    def stream_slices(self, **kwargs) -> Iterable[Optional[Mapping[str, Any]]]:
+        """
+        Each slice consists of an interest_category_id and list_id pair.
+        """
+
+        parent_stream_slices = self.parent.stream_slices(sync_mode=SyncMode.full_refresh)
+
+        for stream_slice in parent_stream_slices:
+            parent_records = self.parent.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice)
+
+            for record in parent_records:
+                yield {"list_id": record["list_id"], "segment_id": record["id"]}
+
+    def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
+        list_id = stream_slice.get("list_id")
+        segment_id = stream_slice.get("segment_id")
+        return f"lists/{list_id}/segments/{segment_id}/members"
+    
+    def parse_response(self, response: requests.Response, stream_state: Mapping[str, Any], **kwargs) -> Iterable[Mapping]:
+
+        response = super().parse_response(response, **kwargs)
+
+        # SegmentMembers endpoint does not support sorting, so we need to filter out records that are older than the current state
+        for record in response:
+            current_cursor_value = stream_state.get(record.get("list_id"), {}).get(self.cursor_field)
+            record_cursor_value = record.get(self.cursor_field)
+            if current_cursor_value is None or record_cursor_value >= current_cursor_value:
+                yield record
 
 
 class Segments(MailChimpListSubStream):

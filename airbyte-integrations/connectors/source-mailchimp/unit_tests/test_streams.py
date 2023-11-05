@@ -10,7 +10,7 @@ import requests
 import responses
 from airbyte_cdk.models import SyncMode
 from requests.exceptions import HTTPError
-from source_mailchimp.streams import Campaigns, EmailActivity, InterestCategories, ListMembers, Lists, Segments
+from source_mailchimp.streams import Campaigns, EmailActivity, InterestCategories, ListMembers, Lists, SegmentMembers, Segments
 from utils import read_full_refresh, read_incremental
 
 
@@ -161,12 +161,26 @@ def test_stream_parse_json_error(auth, caplog):
                 "offset": 3000,
                 "exclude_fields": "categories._links",
             }
+        ),
+        (
+            SegmentMembers,
+            {"list_id": "123", "segment_id": "456"},
+            {},
+            {"offset": 2000},
+            {
+                "count": 1000,
+                "list_id": "123",
+                "segment_id": "456",
+                "offset": 2000,
+                "exclude_fields": "members._links",
+            }
         )
     ],
     ids=[
         "Segments: no next_page_token or state to add to request params",
         "ListMembers: next_page_token and state filter added to request params",
-        "InterestCategories: next_page_token added to request params"
+        "InterestCategories: next_page_token added to request params",
+        "SegmentMembers: next_page_token and sorting added to request params",
     ],
 )
 def test_list_child_request_params(auth, lists_stream, stream_class, stream_slice, stream_state, next_page_token, expected_params):
