@@ -10,7 +10,7 @@ import requests
 import responses
 from airbyte_cdk.models import SyncMode
 from requests.exceptions import HTTPError
-from source_mailchimp.streams import Campaigns, EmailActivity, InterestCategories, ListMembers, Lists, SegmentMembers, Segments
+from source_mailchimp.streams import Campaigns, EmailActivity, InterestCategories, Interests, ListMembers, Lists, SegmentMembers, Segments
 from utils import read_full_refresh, read_incremental
 
 
@@ -121,6 +121,32 @@ def test_stream_parse_json_error(auth, caplog):
     responses.add("GET", stream_url, body="not_valid_json")
     read_incremental(stream, {})
     assert "response.content=b'not_valid_json'" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "stream_class, stream_slice, expected_path",
+    [
+        (ListMembers, {"list_id": "list_1"}, "lists/list_1/members"),
+        (Interests, {"list_id": "list_1", "category_id": "category_1"}, "lists/list_1/interest-categories/category_1/interests"),
+        (InterestCategories, {"list_id": "list_1"}, "lists/list_1/interest-categories"),
+        (Segments, {"list_id": "list_1"}, "lists/list_1/segments"),
+        (SegmentMembers, {"list_id": "list_1", "segment_id": "segment_1"}, "lists/list_1/segments/segment_1/members"),
+    ],
+)
+def test_stream_path(auth, stream_class, stream_slice, expected_path):
+    # Assuming the stream class is MyStream and it has a path method that uses parent_id
+    parent_stream = Lists(authenticator=auth)
+
+    stream = stream_class(authenticator=auth, parent=parent_stream)
+
+    if stream_class == SegmentMembers:
+        stream_slice["segment_id"] = "segment_1"
+    elif stream_class == Interests:
+        stream_slice["category_id"] = "category_1"
+
+    actual_path = stream.path(stream_slice=stream_slice)
+
+    assert actual_path == expected_path, f"Expected path '{expected_path}', but got '{actual_path}'"
 
 
 @pytest.mark.parametrize(

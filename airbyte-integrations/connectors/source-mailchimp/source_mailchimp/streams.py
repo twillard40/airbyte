@@ -143,6 +143,7 @@ class MailChimpListSubStream(IncrementalMailChimpStream):
 
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         list_id = stream_slice.get("list_id")
+        print(f"stream_slice: {list_id}")
         return f"lists/{list_id}/{self.data_field}"
 
     def request_params(self, stream_state=None, stream_slice=None, **kwargs) -> MutableMapping[str, Any]:
@@ -293,13 +294,6 @@ class Interests(MailChimpListSubStream):
         list_id = stream_slice.get("list_id")
         interest_category_id = stream_slice.get("interest_category_id")
         return f"lists/{list_id}/interest-categories/{interest_category_id}/interests"
-    
-    def request_params(self, stream_state=None, stream_slice=None, **kwargs) -> MutableMapping[str, Any]:
-        params = super().request_params(stream_state, stream_slice, **kwargs)
-        # Remove sorting params that are not supported by this endpoint
-        params.pop("sort_field", None)
-        params.pop("sort_dir", None)
-        return params
 
 
 class InterestCategories(MailChimpListSubStream):
@@ -316,13 +310,6 @@ class InterestCategories(MailChimpListSubStream):
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         list_id = stream_slice.get("list_id")
         return f"lists/{list_id}/interest-categories"
-    
-    def request_params(self, stream_state=None, stream_slice=None, **kwargs) -> MutableMapping[str, Any]:
-        params = super().request_params(stream_state, stream_slice, **kwargs)
-        # Remove sorting params that are not supported by this endpoint
-        params.pop("sort_field")
-        params.pop("sort_dir")
-        return params
 
 
 class ListMembers(MailChimpListSubStream):
