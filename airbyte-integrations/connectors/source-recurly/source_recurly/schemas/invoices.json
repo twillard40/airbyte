@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
     "id": {
@@ -7,6 +7,9 @@
       "title": "Invoice ID",
       "readOnly": true,
       "maxLength": 13
+    },
+    "object": {
+      "type": ["null", "string"]
     },
     "uuid": {
       "type": ["null", "string"]
@@ -153,15 +156,7 @@
       }
     },
     "shipping_address": {
-      "type": ["null", "object"],
-      "properties": {
-        "id": {
-          "type": ["null", "string"],
-          "title": "Shipping Address ID",
-          "maxLength": 13,
-          "readOnly": true
-        }
-      }
+      "type": { "$ref": "shipping_addresses.json" }
     },
     "currency": {
       "type": ["null", "string"],

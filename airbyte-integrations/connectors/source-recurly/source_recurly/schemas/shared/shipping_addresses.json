@@ -8,6 +8,9 @@
       "maxLength": 13,
       "readOnly": true
     },
+    "object": {
+      "type": ["null", "string"]
+    },
     "account_id": {
       "type": "string",
       "title": "Account ID",
