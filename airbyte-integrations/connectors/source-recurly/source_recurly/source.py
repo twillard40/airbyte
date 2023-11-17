@@ -47,6 +47,8 @@ class SourceRecurly(AbstractSource):
             return True, None
         except ApiError as err:
             return False, err.args[0]
+        except Exception as err:
+            return False, repr(err)
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
         client = self._client(api_key=config["api_key"])
