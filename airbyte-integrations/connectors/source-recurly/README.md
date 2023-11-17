@@ -1,7 +1,7 @@
-# Amazon Seller-Partner Source
+# Recurly Source
 
-This is the repository for the Amazon Seller-Partner source connector, written in Python.
-For information about how to use this connector within Airbyte, see [the documentation](https://docs.airbyte.io/integrations/sources/amazon-seller-partner).
+This is the repository for the Recurly source connector, written in Python.
+For information about how to use this connector within Airbyte, see [the documentation](https://docs.airbyte.io/integrations/sources/recurly).
 
 ## Local development
 
@@ -28,12 +28,12 @@ If this is mumbo jumbo to you, don't worry about it, just put your deps in `setu
 should work as you expect.
 
 #### Create credentials
-**If you are a community contributor**, follow the instructions in the [documentation](https://docs.airbyte.io/integrations/sources/amazon-seller-partner)
+**If you are a community contributor**, follow the instructions in the [documentation](https://docs.airbyte.io/integrations/sources/recurly)
 to generate the necessary credentials. Then create a file `secrets/config.json` conforming to the `source_amazon_seller-partner/integration_tests/spec.json` file.
 Note that the `secrets` directory is gitignored by default, so there is no danger of accidentally checking in sensitive information.
 See `integration_tests/sample_config.json` for a sample config file.
 
-**If you are an Airbyte core member**, copy the credentials in Lastpass under the secret name `source amazon-seller-partner test creds`
+**If you are an Airbyte core member**, copy the credentials in Lastpass under the secret name `source recurly test creds`
 and place them into `secrets/config.json`.
 
 ### Locally running the connector
@@ -50,23 +50,23 @@ python main.py read --config secrets/config.json --catalog integration_tests/con
 #### Build
 **Via [`airbyte-ci`](https://github.com/airbytehq/airbyte/blob/master/airbyte-ci/connectors/pipelines/README.md) (recommended):**
 ```bash
-airbyte-ci connectors --name source-amazon-seller-partner build
+airbyte-ci connectors --name source-recurly build
 ```
 
-An image will be built with the tag `airbyte/source-amazon-seller-partner:dev`.
+An image will be built with the tag `airbyte/source-recurly:dev`.
 
 **Via `docker build`:**
 ```bash
-docker build -t airbyte/source-amazon-seller-partner:dev .
+docker build -t airbyte/source-recurly:dev .
 ```
 
 #### Run
 Then run any of the connector commands as follows:
 ```
-docker run --rm airbyte/source-amazon-seller-partner:dev spec
-docker run --rm -v $(pwd)/secrets:/secrets airbyte/source-amazon-seller-partner:dev check --config /secrets/config.json
-docker run --rm -v $(pwd)/secrets:/secrets airbyte/source-amazon-seller-partner:dev discover --config /secrets/config.json
-docker run --rm -v $(pwd)/secrets:/secrets -v $(pwd)/integration_tests:/integration_tests airbyte/source-amazon-seller-partner:dev read --config /secrets/config.json --catalog /integration_tests/configured_catalog.json
+docker run --rm airbyte/source-recurly:dev spec
+docker run --rm -v $(pwd)/secrets:/secrets airbyte/source-recurly:dev check --config /secrets/config.json
+docker run --rm -v $(pwd)/secrets:/secrets airbyte/source-recurly:dev discover --config /secrets/config.json
+docker run --rm -v $(pwd)/secrets:/secrets -v $(pwd)/integration_tests:/integration_tests airbyte/source-recurly:dev read --config /secrets/config.json --catalog /integration_tests/configured_catalog.json
 ```
 
 ## Testing
