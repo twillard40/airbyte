@@ -1,13 +1,20 @@
 # Facebook Marketing
 
+<HideInUI>
+
 This page guides you through the process of setting up the Facebook Marketing source connector.
+
+</HideInUI>
 
 ## Prerequisites
 
 - A [Facebook Ad Account ID](https://www.facebook.com/business/help/1492627900875762)
 
 <!-- env:cloud -->
-- (For **Airbyte Cloud**) The credentials of an active Facebook account with the following permissions for the Ad account:
+#### For Airbyte Cloud
+
+The credentials of an active Facebook account with the following permissions for the Ad account:
+
   - [ads_management](https://developers.facebook.com/docs/permissions#a)
   - [ads_read](https://developers.facebook.com/docs/permissions#a)
   - [business_management](https://developers.facebook.com/docs/permissions#b)
@@ -15,7 +22,11 @@ This page guides you through the process of setting up the Facebook Marketing so
 <!-- /env:cloud -->
 
 <!-- env:oss -->
-- (For **Airbyte Open Source**) A [Facebook app](https://developers.facebook.com/apps/) with the Marketing API enabled and the following permissions:
+
+#### For Airbyte Open Source
+
+A [Facebook app](https://developers.facebook.com/apps/) with the Marketing API enabled and the following permissions:
+
   - [ads_management](https://developers.facebook.com/docs/permissions#a)
   - [ads_read](https://developers.facebook.com/docs/permissions#a)
   - [business_management](https://developers.facebook.com/docs/permissions#b)
@@ -28,25 +39,16 @@ This page guides you through the process of setting up the Facebook Marketing so
 
 ### (For Airbyte Open Source) Create a Facebook App
 
-1. Navigate to the [Meta for Developers Apps dashboard](https://developers.facebook.com/apps/) and follow the steps provided in the [Facebook documentation](https://developers.facebook.com/docs/development/create-an-app/) to create a Facebook app. Select **Other** as your use case, and set the app type to [**Business**](https://developers.facebook.com/docs/development/create-an-app/app-dashboard/app-types#business) when prompted.
-2. From your App’s dashboard, find the **Marketing API** and click **Set up**.
-3. Navigate to the [Explorer tool](https://developers.facebook.com/tools/explorer):
-    1. Select your app in the **Meta App** dropdown on the right.
-    2. Select **Get User Access Token** from the **User or Page** dropdown.
-    3. Add the following permissions:
-    - [ads_management](https://developers.facebook.com/docs/permissions#a)
-    - [ads_read](https://developers.facebook.com/docs/permissions#a)
-    - [business_management](https://developers.facebook.com/docs/permissions#b)
-    - [read_insights](https://developers.facebook.com/docs/permissions#r)
-    4. Click **Generate Access Token**. Be sure to copy and save the token in a secure location.
-
-4. Go to the [Access Token Tool](https://developers.facebook.com/tools/accesstoken). Click **Debug** for the access token you just generated.
-
-5. Facebook heavily throttles access to the Graph API for apps with Standard Access. To avoid encountering rate limiting issues, you may need to request [Advanced Access](https://developers.facebook.com/docs/graph-api/overview/access-levels#advanced-access) for the permissions listed above. From the Apps dashboard, select **App Review** > **Permissions and Features**. Select **Request Advanced Access** for each permission. At the time of writing, Advanced Access can only be obtained after completing Facebook's [Business Verification](https://developers.facebook.com/docs/development/release/business-verification) process.
+1. Navigate to [Meta for Developers](https://developers.facebook.com/apps/) and follow the steps provided in the [Facebook documentation](https://developers.facebook.com/docs/development/create-an-app/) to create a Facebook app. Set the app type to **Business** when prompted.
+2. While creating the app, when you are prompted for "What do you want your app to do?", select **Other**. You will also need to set the app type to **Business** when prompted.
+3. Generate a Marketing API access token: From your App’s Dashboard, click **Marketing API** --> **Tools**. Select all the available token permissions (`ads_management`, `ads_read`, `read_insights`, `business_management`) and click **Get token**. Copy the generated token for later use.
+4. Facebook heavily throttles access to the Graph API for apps with Standard Access. To avoid encountering rate limiting issues, you may need to request [Advanced Access](https://developers.facebook.com/docs/graph-api/overview/access-levels#advanced-access) for the permissions listed above. From the Apps dashboard, select **App Review** > **Permissions and Features**. Select **Request Advanced Access** for each permission. At the time of writing, Advanced Access can only be obtained after completing Facebook's [Business Verification](https://developers.facebook.com/docs/development/release/business-verification) process.
 
 :::tip
 You can use the [Access Token Tool](https://developers.facebook.com/tools/accesstoken) at any time to view your existing access tokens, including their assigned permissions and lifecycles.
 :::
+
+   See the Facebook [documentation on Authorization](https://developers.facebook.com/docs/marketing-api/overview/authorization/#access-levels) to request Advanced Access to the relevant permissions.
 
 <!-- /env:oss -->
 
@@ -113,6 +115,8 @@ You can use the [Access Token Tool](https://developers.facebook.com/tools/access
 7. (Optional) For **Page Size of Requests**, you can specify the number of records per page for paginated responses. Most users do not need to set this field unless specific issues arise or there are unique use cases that require tuning the connector's settings. The default value is set to retrieve 100 records per page.
 8. (Optional) For **Insights Window Lookback**, you may set a window in days to revisit data during syncing to capture updated conversion data from the API. Facebook allows for attribution windows of up to 28 days, during which time a conversion can be attributed to an ad. If you have set a custom attribution window in your Facebook account, please set the same value here. Otherwise, you may leave it at the default value of 28. For more information on action attributions, please refer to [the Meta Help Center](https://www.facebook.com/business/help/458681590974355?id=768381033531365).
 9. Click **Set up source** and wait for the tests to complete.
+
+<HideInUI>
 
 ## Supported sync modes
 
@@ -197,6 +201,10 @@ The Facebook Marketing connector uses the `lookback_window` parameter to repeate
 
 | Version | Date       | Pull Request                                             | Subject                                                                                                                                                                                                                                                                                           |
 |:--------|:-----------|:---------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1.2.0   | 2023-10-31 | [31999](https://github.com/airbytehq/airbyte/pull/31999) | Extend the `AdCreatives` stream schema                                                                                                                                                                                                                                                            |
+| 1.1.17  | 2023-10-19 | [31599](https://github.com/airbytehq/airbyte/pull/31599) | Base image migration: remove Dockerfile and use the python-connector-base image                                                                                                                                                                                                                   |
+| 1.1.16  | 2023-10-11 | [31284](https://github.com/airbytehq/airbyte/pull/31284) | Fix error occurring when trying to access the `funding_source_details` field of the `AdAccount` stream                                                                                                                                                                                            |
+| 1.1.15  | 2023-10-06 | [31132](https://github.com/airbytehq/airbyte/pull/31132) | Fix permission error for `AdAccount` stream                                                                                                                                                                                                                                                       |
 | 1.1.14  | 2023-09-26 | [30758](https://github.com/airbytehq/airbyte/pull/30758) | Exception should not be raises if a stream is not found                                                                                                                                                                                                                                           |
 | 1.1.13  | 2023-09-22 | [30706](https://github.com/airbytehq/airbyte/pull/30706) | Performance testing - include socat binary in docker image                                                                                                                                                                                                                                        |
 | 1.1.12  | 2023-09-22 | [30655](https://github.com/airbytehq/airbyte/pull/30655) | Updated doc; improved schema for custom insight streams; updated SAT or custom insight streams; removed obsolete optional max_batch_size option from spec                                                                                                                                         |
@@ -316,3 +324,5 @@ The Facebook Marketing connector uses the `lookback_window` parameter to repeate
 | 0.1.3   | 2021-02-15 | [1990](https://github.com/airbytehq/airbyte/pull/1990)   | Support Insights stream via async queries                                                                                                                                                                                                                                                         |
 | 0.1.2   | 2021-01-22 | [1699](https://github.com/airbytehq/airbyte/pull/1699)   | Add incremental support                                                                                                                                                                                                                                                                           |
 | 0.1.1   | 2021-01-15 | [1552](https://github.com/airbytehq/airbyte/pull/1552)   | Release Native Facebook Marketing Connector                                                                                                                                                                                                                                                       |
+
+</HideInUI>
