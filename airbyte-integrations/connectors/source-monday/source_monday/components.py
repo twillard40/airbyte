@@ -167,9 +167,14 @@ class IncrementalSubstreamSlicer(IncrementalSingleSlice):
     ) -> Iterable[Mapping[str, Any]]:
         self.parent_stream.state = stream_state
 
+        print(f"parent_stream.state: {self.parent_stream.state}")
+        print(f"parent_cursor_field: {self.parent_cursor_field}")
+        print(f"Checking stream state for parent_cursor_field: {stream_state.get(self.parent_cursor_field)}")
+
         # check if state is empty ->
         if not stream_state.get(self.parent_cursor_field):
             # yield empty slice for complete fetch of items stream
+            print("Yielding empty slice due to empty stream_state[parent_cursor_field]")
             yield {}
             return
 
@@ -178,9 +183,11 @@ class IncrementalSubstreamSlicer(IncrementalSingleSlice):
         empty_parent_slice = True
 
         for parent_slice in self.parent_stream.stream_slices(sync_mode=sync_mode, cursor_field=cursor_field, stream_state=stream_state):
+            print(f"We are in parent_stream.stream_slices")
             for parent_record in self.parent_stream.read_records(
                 sync_mode=sync_mode, cursor_field=cursor_field, stream_slice=parent_slice, stream_state=stream_state
             ):
+                print(f"We are in parent_stream.read_records")
                 # Skip non-records (eg AirbyteLogMessage)
                 if isinstance(parent_record, AirbyteMessage):
                     if parent_record.type == Type.RECORD:
@@ -212,6 +219,8 @@ class IncrementalSubstreamSlicer(IncrementalSingleSlice):
 
     def stream_slices(self) -> Iterable[Mapping[str, Any]]:
         parent_state = (self._state or {}).get(self.parent_stream_name, {})
+
+        print(f"parent_state: {parent_state}")
 
         slices_generator = self.read_parent_stream(self.parent_sync_mode, self.parent_cursor_field, parent_state)
         yield from [slice for slice in slices_generator] if self.parent_complete_fetch else slices_generator

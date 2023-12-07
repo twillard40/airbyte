@@ -7,6 +7,7 @@ from typing import Any
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.declarative.partition_routers.substream_partition_router import ParentStreamConfig
 from airbyte_cdk.sources.streams import Stream
 from requests import Response
@@ -99,3 +100,55 @@ def test_null_records(caplog):
         {"board_kind": "private", "id": "1234566", "updated_at": "2023-08-15T10:30:54Z", "updated_at_int": 1692095454},
     ]
     assert records == expected_records
+
+
+@pytest.fixture
+def mock_parent_stream():
+    mock_stream = MagicMock(spec=Stream)
+    mock_stream.primary_key = "id"  # Example primary key
+    mock_stream.stream_slices.return_value = iter([{"ids": [123, 456, 789]}])
+    mock_stream.read_records = MagicMock(return_value=iter([
+        {
+            "id": 12345,
+            "name": "Sample Project",
+            "status": "In Progress",
+            "due_date": "2023-07-15",
+            "assignee": {
+                "id": 67890,
+                "name": "John Doe"
+            }
+        }]))  # Mock read_records to return an empty iterator
+    return mock_stream
+
+@pytest.mark.parametrize("stream_state, expected_slices", [
+    ({}, [{}]),  # Empty state
+    ({"updated_at": "some_state_value"}, [{}]),  # Non-empty state
+    # Add more test cases as needed
+])
+def test_read_parent_stream(mock_parent_stream, stream_state, expected_slices):
+
+    parent_cursor_field = "updated_at"
+
+    slicer = IncrementalSubstreamSlicer(
+        config={},
+        parameters={},
+        cursor_field=parent_cursor_field,
+        parent_stream_configs=[MagicMock()],
+        nested_items_per_page=10
+    )
+
+    print("Calling read_parent_stream...")
+    slices = list(slicer.read_parent_stream(
+        sync_mode=SyncMode.incremental,
+        cursor_field="cursor_field",
+        stream_state=stream_state
+    ))
+
+    print(f"Slices received: {slices}")
+    print(f"read_records called: {mock_parent_stream.read_records.call_count} times")
+    print(f"read_records call args: {mock_parent_stream.read_records.call_args}")
+
+    # Assertions
+    assert slices == expected_slices
+    # Additional assert to check if read_records is called
+    assert mock_parent_stream.read_records.call_count > 0
