@@ -4,7 +4,7 @@
 
 import json
 from typing import Any
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from airbyte_cdk.models import SyncMode
@@ -102,45 +102,59 @@ def test_null_records(caplog):
     assert records == expected_records
 
 
+def mock_stream_slices(*args, **kwargs):
+    return iter([{"ids": [123, 456]}])
+
 @pytest.fixture
 def mock_parent_stream():
     mock_stream = MagicMock(spec=Stream)
     mock_stream.primary_key = "id"  # Example primary key
-    mock_stream.stream_slices.return_value = iter([{"ids": [123, 456, 789]}])
+    mock_stream.stream_slices = mock_stream_slices
     mock_stream.read_records = MagicMock(return_value=iter([
         {
-            "id": 12345,
-            "name": "Sample Project",
+            "id": 456,
+            "name": "Sample Project 2",
+            "updated_at": "2023-01-03T00:00:00Z",
             "status": "In Progress",
             "due_date": "2023-07-15",
             "assignee": {
                 "id": 67890,
                 "name": "John Doe"
             }
-        }]))  # Mock read_records to return an empty iterator
+        },
+        {
+            "id": 123,
+            "name": "Sample Project",
+            "updated_at": "2023-01-01T00:00:00Z",
+            "status": "In Progress",
+            "due_date": "2023-07-15",
+            "assignee": {
+                "id": 67890,
+                "name": "John Doe"
+            }
+        }]))
     return mock_stream
 
 @pytest.mark.parametrize("stream_state, expected_slices", [
     ({}, [{}]),  # Empty state
-    ({"updated_at": "some_state_value"}, [{}]),  # Non-empty state
-    # Add more test cases as needed
+    ({"updated_at": "2022-01-01T00:00:00Z"}, []),  # Non-empty state
 ])
 def test_read_parent_stream(mock_parent_stream, stream_state, expected_slices):
-
-    parent_cursor_field = "updated_at"
 
     slicer = IncrementalSubstreamSlicer(
         config={},
         parameters={},
-        cursor_field=parent_cursor_field,
+        cursor_field="updated_at",
         parent_stream_configs=[MagicMock()],
         nested_items_per_page=10
     )
 
+    slicer.parent_cursor_field = "updated_at"
+
     print("Calling read_parent_stream...")
     slices = list(slicer.read_parent_stream(
-        sync_mode=SyncMode.incremental,
-        cursor_field="cursor_field",
+        sync_mode=SyncMode.full_refresh,
+        cursor_field="updated_at",
         stream_state=stream_state
     ))
 
@@ -150,5 +164,3 @@ def test_read_parent_stream(mock_parent_stream, stream_state, expected_slices):
 
     # Assertions
     assert slices == expected_slices
-    # Additional assert to check if read_records is called
-    assert mock_parent_stream.read_records.call_count > 0

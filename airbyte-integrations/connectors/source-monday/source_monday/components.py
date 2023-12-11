@@ -169,6 +169,7 @@ class IncrementalSubstreamSlicer(IncrementalSingleSlice):
 
         print(f"parent_stream.state: {self.parent_stream.state}")
         print(f"parent_cursor_field: {self.parent_cursor_field}")
+        print(f"Stream state: {stream_state}")
         print(f"Checking stream state for parent_cursor_field: {stream_state.get(self.parent_cursor_field)}")
 
         # check if state is empty ->
