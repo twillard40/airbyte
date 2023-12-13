@@ -136,3 +136,17 @@ def test_build_activity_query(mocker, monday_requester):
 
     result = requester._build_activity_query(object_name="activity_logs", field_schema={}, sub_page=None, **object_arguments)
     assert result == "boards(stream_state:{{ stream_state['updated_at_int'] }}){activity_logs(stream_state:{{ stream_state['updated_at_int'] }}){}}"
+
+
+def test_build_items_incremental_query(mocker, monday_requester):
+
+    object_name = "test_items"
+    field_schema = {
+        "id": {"type": "integer"},
+        "name": {"type": "string"},
+    }
+    stream_slice = {"ids": [1, 2, 3]}
+
+    built_query = monday_requester._build_items_incremental_query(object_name, field_schema, stream_slice)
+
+    assert built_query == 'items(limit:100,ids:[1, 2, 3]){id,name}'

@@ -13,6 +13,7 @@ from airbyte_cdk.sources.streams import Stream
 from requests import Response
 from source_monday.components import IncrementalSingleSlice, IncrementalSubstreamSlicer
 from source_monday.extractor import MondayIncrementalItemsExtractor
+from airbyte_cdk.models import AirbyteMessage, Type
 
 
 def _create_response(content: Any) -> Response:
@@ -102,65 +103,88 @@ def test_null_records(caplog):
     assert records == expected_records
 
 
-def mock_stream_slices(*args, **kwargs):
-    return iter([{"ids": [123, 456]}])
+def mock_parent_stream_slices(*args, **kwargs):
+    return iter([{"ids": [123]}])
 
 @pytest.fixture
 def mock_parent_stream():
     mock_stream = MagicMock(spec=Stream)
     mock_stream.primary_key = "id"  # Example primary key
-    mock_stream.stream_slices = mock_stream_slices
-    mock_stream.read_records = MagicMock(return_value=iter([
-        {
-            "id": 456,
-            "name": "Sample Project 2",
-            "updated_at": "2023-01-03T00:00:00Z",
-            "status": "In Progress",
-            "due_date": "2023-07-15",
-            "assignee": {
-                "id": 67890,
-                "name": "John Doe"
-            }
-        },
-        {
-            "id": 123,
-            "name": "Sample Project",
-            "updated_at": "2023-01-01T00:00:00Z",
-            "status": "In Progress",
-            "due_date": "2023-07-15",
-            "assignee": {
-                "id": 67890,
-                "name": "John Doe"
-            }
-        }]))
+    mock_stream.stream_slices = mock_parent_stream_slices
+    
+    mock_stream.parent_config = ParentStreamConfig(
+        stream=mock_stream,
+        parent_key="id",
+        partition_field="parent_stream_id",
+        parameters={},
+        config={},
+    )
+
     return mock_stream
 
-@pytest.mark.parametrize("stream_state, expected_slices", [
-    ({}, [{}]),  # Empty state
-    ({"updated_at": "2022-01-01T00:00:00Z"}, []),  # Non-empty state
-])
-def test_read_parent_stream(mock_parent_stream, stream_state, expected_slices):
+@pytest.mark.parametrize("stream_state, parent_records, expected_slices", 
+    [
+        ({}, [], [{}]),
+        (
+            {"updated_at": "2022-01-01T00:00:00Z"},
+            [AirbyteMessage(
+                type=Type.RECORD, 
+                record={ "data": {"id": 123, "name": "Sample Record", "updated_at": "2023-01-01T00:00:00Z"}, "stream": "projects", "emitted_at": 1632095449}
+            )],
+            [{'parent_stream_id': [123]}]
+        ),
+        (
+            {"updated_at": "2022-01-01T00:00:00Z"},
+            AirbyteMessage(type=Type.LOG),
+            []
+        )
+    ], 
+    ids=[
+    "no stream state",
+    "read parent record",
+    "skip non_record AirbyteMessage"
+    ]
+)
+def test_read_parent_stream(mock_parent_stream, stream_state, parent_records, expected_slices):
 
     slicer = IncrementalSubstreamSlicer(
         config={},
         parameters={},
         cursor_field="updated_at",
-        parent_stream_configs=[MagicMock()],
+        parent_stream_configs=[mock_parent_stream.parent_config],
         nested_items_per_page=10
     )
 
+    mock_parent_stream.read_records = MagicMock(return_value=parent_records)
     slicer.parent_cursor_field = "updated_at"
 
-    print("Calling read_parent_stream...")
     slices = list(slicer.read_parent_stream(
         sync_mode=SyncMode.full_refresh,
         cursor_field="updated_at",
         stream_state=stream_state
     ))
 
-    print(f"Slices received: {slices}")
-    print(f"read_records called: {mock_parent_stream.read_records.call_count} times")
-    print(f"read_records call args: {mock_parent_stream.read_records.call_args}")
-
     # Assertions
     assert slices == expected_slices
+
+
+def test_set_initial_state():
+
+    slicer = IncrementalSubstreamSlicer(
+        config={},
+        parameters={},
+        cursor_field="updated_at",
+        parent_stream_configs=[MagicMock(parent_stream_name="parent_stream")],
+        nested_items_per_page=10
+    )
+
+    initial_stream_state = {
+        "updated_at": 1662459010,  # Cursor value directly associated with cursor_field
+        "parent_stream": {"parent_cursor_field": 1662459011}  # State for the parent stream
+    }
+
+    expected_state = { "updated_at": 1662459010 }
+
+    slicer.set_initial_state(initial_stream_state)
+
+    assert slicer._state == expected_state
