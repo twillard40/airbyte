@@ -147,7 +147,7 @@ public class RedshiftStagingS3Destination extends AbstractJdbcDestination implem
     // TODO: Pull common code from RedshiftInsertDestination and RedshiftStagingS3Destination into a
     // base class.
     // The following properties can be overriden through jdbcUrlParameters in the config.
-    Map<String, String> connectionOptions = new HashMap<>();
+    final Map<String, String> connectionOptions = new HashMap<>();
     // Redshift properties
     // https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html#jdbc20-connecttimeout-option
     // connectTimeout is different from Hikari pool's connectionTimout, driver defaults to 10seconds so
@@ -175,7 +175,7 @@ public class RedshiftStagingS3Destination extends AbstractJdbcDestination implem
   }
 
   @Override
-  protected JdbcDestinationHandler getDestinationHandler(String databaseName, JdbcDatabase database) {
+  protected JdbcDestinationHandler getDestinationHandler(final String databaseName, final JdbcDatabase database) {
     return new RedshiftDestinationHandler(databaseName, database);
   }
 
@@ -204,25 +204,6 @@ public class RedshiftStagingS3Destination extends AbstractJdbcDestination implem
                   of streams {} this will create more buffers than necessary, leading to nonexistent gains
                   """, FileBuffer.SOFT_CAP_CONCURRENT_STREAM_IN_BUFFER, catalog.getStreams().size());
     }
-    // Short circuit old way of running things during transition.
-    if (!TypingAndDedupingFlag.isDestinationV2()) {
-      return new StagingConsumerFactory().createAsync(
-          outputRecordCollector,
-          getDatabase(getDataSource(config)),
-          new RedshiftS3StagingSqlOperations(getNamingResolver(), s3Config.getS3Client(), s3Config, encryptionConfig),
-          getNamingResolver(),
-          config,
-          catalog,
-          isPurgeStagingData(s3Options),
-          new TypeAndDedupeOperationValve(),
-          new NoopTyperDeduper(),
-          // The parsedcatalog is only used in v2 mode, so just pass null for now
-          null,
-          // Overwriting null namespace with null is perfectly safe
-          null,
-          // still using v1 table format
-          false);
-    }
 
     final String defaultNamespace = config.get("schema").asText();
     for (final ConfiguredAirbyteStream stream : catalog.getStreams()) {
@@ -245,7 +226,7 @@ public class RedshiftStagingS3Destination extends AbstractJdbcDestination implem
     parsedCatalog = catalogParser.parseCatalog(catalog);
     final JdbcV1V2Migrator migrator = new JdbcV1V2Migrator(getNamingResolver(), database, databaseName);
     final NoopV2TableMigrator v2TableMigrator = new NoopV2TableMigrator();
-    boolean disableTypeDedupe = config.has(DISABLE_TYPE_DEDUPE) && config.get(DISABLE_TYPE_DEDUPE).asBoolean(false);
+    final boolean disableTypeDedupe = config.has(DISABLE_TYPE_DEDUPE) && config.get(DISABLE_TYPE_DEDUPE).asBoolean(false);
     final int defaultThreadCount = 8;
     if (disableTypeDedupe) {
       typerDeduper = new NoOpTyperDeduperWithV1V2Migrations<>(sqlGenerator, redshiftDestinationHandler, parsedCatalog, migrator, v2TableMigrator,
