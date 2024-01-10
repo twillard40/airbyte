@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023 Airbyte, Inc., all rights reserved.
+ */
+
 package io.airbyte.integrations.source.mssql.initialsync;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public interface MssqlInitialLoadStateManager {
+
   long MSSQL_STATE_VERSION = 2;
   String STATE_TYPE_KEY = "state_type";
   String ORDERED_COL_STATE_TYPE = "ordered_column";
@@ -22,16 +27,18 @@ public interface MssqlInitialLoadStateManager {
   // Returns the final state message for the initial sync.
   AirbyteStateMessage createFinalStateMessage(final AirbyteStreamNameNamespacePair pair, final JsonNode streamStateForIncrementalRun);
 
-  // Returns the previous state emitted, represented as a {@link OrderedColumnLoadStatus} associated with
+  // Returns the previous state emitted, represented as a {@link OrderedColumnLoadStatus} associated
+  // with
   // the stream.
   OrderedColumnLoadStatus getOrderedColumnLoadStatus(final AirbyteStreamNameNamespacePair pair);
 
-  // Returns the current {@OrderedColumnInfo}, associated with the stream. This includes the data type &
+  // Returns the current {@OrderedColumnInfo}, associated with the stream. This includes the data type
+  // &
   // the column name associated with the stream.
   OrderedColumnInfo getOrderedColumnInfo(final AirbyteStreamNameNamespacePair pair);
 
   static Map<AirbyteStreamNameNamespacePair, OrderedColumnLoadStatus> initPairToOrderedColumnLoadStatusMap(
-      final Map<io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair, OrderedColumnLoadStatus> pairToOcStatus) {
+                                                                                                           final Map<io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair, OrderedColumnLoadStatus> pairToOcStatus) {
     final Map<AirbyteStreamNameNamespacePair, OrderedColumnLoadStatus> map = new HashMap<>();
     pairToOcStatus.forEach((pair, ocStatus) -> {
       final AirbyteStreamNameNamespacePair updatedPair = new AirbyteStreamNameNamespacePair(pair.getName(), pair.getNamespace());
@@ -39,4 +46,5 @@ public interface MssqlInitialLoadStateManager {
     });
     return map;
   }
+
 }

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023 Airbyte, Inc., all rights reserved.
+ */
+
 package io.airbyte.integrations.source.mssql.initialsync;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,7 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class MssqlInitialLoadGlobalStateManager implements MssqlInitialLoadStateManager{
+public class MssqlInitialLoadGlobalStateManager implements MssqlInitialLoadStateManager {
 
   private final Map<AirbyteStreamNameNamespacePair, OrderedColumnLoadStatus> pairToOrderedColLoadStatus;
   private final Map<AirbyteStreamNameNamespacePair, OrderedColumnInfo> pairToOrderedColInfo;
@@ -33,10 +37,11 @@ public class MssqlInitialLoadGlobalStateManager implements MssqlInitialLoadState
   // a result, we need to keep track of streams that
   // have completed the snapshot.
   private final Set<AirbyteStreamNameNamespacePair> streamsThatHaveCompletedSnapshot;
+
   public MssqlInitialLoadGlobalStateManager(final InitialLoadStreams initialLoadStreams,
-      final Map<AirbyteStreamNameNamespacePair, OrderedColumnInfo> pairToOrderedColInfo,
-      final CdcState cdcState,
-      final ConfiguredAirbyteCatalog catalog) {
+                                            final Map<AirbyteStreamNameNamespacePair, OrderedColumnInfo> pairToOrderedColInfo,
+                                            final CdcState cdcState,
+                                            final ConfiguredAirbyteCatalog catalog) {
     this.cdcState = cdcState;
     this.pairToOrderedColLoadStatus = MssqlInitialLoadStateManager.initPairToOrderedColumnLoadStatusMap(initialLoadStreams.pairToInitialLoadStatus());
     this.pairToOrderedColInfo = pairToOrderedColInfo;
@@ -44,7 +49,7 @@ public class MssqlInitialLoadGlobalStateManager implements MssqlInitialLoadState
   }
 
   private static Set<AirbyteStreamNameNamespacePair> initStreamsCompletedSnapshot(final InitialLoadStreams initialLoadStreams,
-      final ConfiguredAirbyteCatalog catalog) {
+                                                                                  final ConfiguredAirbyteCatalog catalog) {
     final Set<AirbyteStreamNameNamespacePair> streamsThatHaveCompletedSnapshot = new HashSet<>();
     catalog.getStreams().forEach(configuredAirbyteStream -> {
       if (!initialLoadStreams.streamsForInitialLoad().contains(configuredAirbyteStream)
