@@ -121,7 +121,7 @@ public class MssqlInitialLoadRecordIterator extends AbstractIterator<JsonNode>
         if (isCompositeKeyLoad) {
           sql = "SELECT %s FROM %s ORDER BY %s".formatted(wrappedColumnNames, fullTableName, quotedCursorField);
         } else {
-          sql = "SELECT %s FROM %s ORDER BY %s LIMIT %s".formatted(wrappedColumnNames, fullTableName, quotedCursorField, chunkSize);
+          sql = "SELECT TOP %s %s FROM %s ORDER BY %s".formatted(chunkSize, wrappedColumnNames, fullTableName, quotedCursorField);
         }
         final PreparedStatement preparedStatement = connection.prepareStatement(sql);
         LOGGER.info("Executing query for table {}: {}", tableName, preparedStatement);
@@ -139,8 +139,8 @@ public class MssqlInitialLoadRecordIterator extends AbstractIterator<JsonNode>
           // can just issue a query
           // without any chunking.
           if (ocInfo.ocMaxValue() != null) {
-            sql = "SELECT %s FROM %s WHERE %s > ? AND %s <= ? ORDER BY %s LIMIT %s".formatted(wrappedColumnNames, fullTableName,
-                quotedCursorField, quotedCursorField, quotedCursorField, chunkSize);
+            sql = "SELECT TOP %s %s FROM %s WHERE %s > ? AND %s <= ? ORDER BY %s".formatted(chunkSize, wrappedColumnNames, fullTableName,
+                quotedCursorField, quotedCursorField, quotedCursorField);
           } else {
             sql = "SELECT %s FROM %s WHERE %s > ? ORDER BY %s".formatted(wrappedColumnNames, fullTableName,
                 quotedCursorField, quotedCursorField);
