@@ -11,6 +11,7 @@ from pipelines.airbyte_ci.connectors.consts import CONNECTOR_TEST_STEP_ID
 from pipelines.airbyte_ci.connectors.context import ConnectorContext
 from pipelines.airbyte_ci.connectors.pipeline import run_connectors_pipelines
 from pipelines.airbyte_ci.connectors.test.pipeline import run_connector_test_pipeline
+from pipelines.cli.click_decorators import click_ci_requirements_option
 from pipelines.cli.dagger_pipeline_command import DaggerPipelineCommand
 from pipelines.consts import LOCAL_BUILD_PLATFORM, ContextState
 from pipelines.helpers.github import update_global_commit_status_check_for_tests
@@ -19,6 +20,7 @@ from pipelines.helpers.utils import fail_if_missing_docker_hub_creds
 
 
 @click.command(cls=DaggerPipelineCommand, help="Test all the selected connectors.")
+@click_ci_requirements_option()
 @click.option(
     "--code-tests-only",
     is_flag=True,
