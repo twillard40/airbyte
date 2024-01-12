@@ -203,3 +203,5 @@ async def airbyte_ci(ctx: click.Context) -> None:  # noqa D103
 
 if __name__ == "__main__":
     airbyte_ci()
+
+# REVERT ME: artificial change to airbyte-ci to use the dev version of it instead of latest
