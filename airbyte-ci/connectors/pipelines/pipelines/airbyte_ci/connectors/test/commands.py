@@ -55,7 +55,7 @@ from pipelines.models.steps import STEP_PARAMS
     type=click.Choice([step_id.value for step_id in CONNECTOR_TEST_STEP_ID]),
     help="Skip a step by name. Can be used multiple times to skip multiple steps.",
 )
-@click.argument("extra_params", nargs=-1, type=click.UNPROCESSED, callback=argument_parsing.build_extra_params_mapping)
+@click.argument("extra_params", nargs=-1, type=click.UNPROCESSED, callback=argument_parsing.build_extra_params_mapping(CONNECTOR_TEST_STEP_ID))
 @click.pass_context
 async def test(
     ctx: click.Context,
