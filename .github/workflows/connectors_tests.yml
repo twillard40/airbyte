@@ -17,10 +17,6 @@ on:
       test-connectors-options:
         description: "Options to pass to the 'airbyte-ci connectors test' command"
         default: "--modified"
-      airbyte_ci_binary_url:
-        description: "The URL to download the airbyte-ci binary from"
-        required: false
-        default: https://connectors.airbyte.com/airbyte-ci/releases/ubuntu/latest/airbyte-ci
   pull_request:
     types:
       - opened
@@ -90,7 +86,6 @@ jobs:
           s3_build_cache_access_key_id: ${{ secrets.SELF_RUNNER_AWS_ACCESS_KEY_ID }}
           s3_build_cache_secret_key: ${{ secrets.SELF_RUNNER_AWS_SECRET_ACCESS_KEY }}
           subcommand: "connectors ${{ github.event.inputs.test-connectors-options }} test"
-          airbyte_ci_binary_url: ${{ github.event.inputs.airbyte_ci_binary_url }}
           tailscale_auth_key: ${{ secrets.TAILSCALE_AUTH_KEY }}
       - name: Test connectors [PULL REQUESTS]
         if: github.event_name == 'pull_request'
