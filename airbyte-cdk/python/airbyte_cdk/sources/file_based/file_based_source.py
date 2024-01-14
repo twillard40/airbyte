@@ -8,8 +8,11 @@ from abc import ABC
 from collections import Counter
 from typing import Any, Iterator, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
-from airbyte_cdk.models import AirbyteMessage, AirbyteStateMessage, ConfiguredAirbyteCatalog, ConnectorSpecification
 from airbyte_cdk.sources import AbstractSource
+from airbyte_cdk.entrypoint import logger as entrypoint_logger
+from airbyte_cdk.logger import AirbyteLogFormatter, init_logger
+from airbyte_cdk.models import AirbyteMessage, AirbyteStateMessage, ConfiguredAirbyteCatalog, ConnectorSpecification, Level, SyncMode
+from airbyte_cdk.sources.connector_state_manager import ConnectorStateManager
 from airbyte_cdk.sources.file_based.availability_strategy import AbstractFileBasedAvailabilityStrategy, DefaultFileBasedAvailabilityStrategy
 from airbyte_cdk.sources.file_based.config.abstract_file_based_spec import AbstractFileBasedSpec
 from airbyte_cdk.sources.file_based.config.file_based_stream_config import FileBasedStreamConfig, ValidationPolicy
@@ -20,19 +23,35 @@ from airbyte_cdk.sources.file_based.file_types import default_parsers
 from airbyte_cdk.sources.file_based.file_types.file_type_parser import FileTypeParser
 from airbyte_cdk.sources.file_based.schema_validation_policies import DEFAULT_SCHEMA_VALIDATION_POLICIES, AbstractSchemaValidationPolicy
 from airbyte_cdk.sources.file_based.stream import AbstractFileBasedStream, DefaultFileBasedStream
+from airbyte_cdk.sources.file_based.stream.concurrent.adapters import FileBasedStreamFacade
 from airbyte_cdk.sources.file_based.stream.cursor import AbstractFileBasedCursor
 from airbyte_cdk.sources.file_based.stream.cursor.default_file_based_cursor import DefaultFileBasedCursor
+from airbyte_cdk.sources.message.repository import InMemoryMessageRepository, MessageRepository
+from airbyte_cdk.sources.source import TState
+from airbyte_cdk.sources.streams.concurrent.cursor import ConcurrentCursor, CursorField, NoopCursor
 from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.utils.analytics_message import create_analytics_message
 from pydantic.error_wrappers import ValidationError
 
 
-class FileBasedSource(AbstractSource, ABC):
+from airbyte_cdk.sources.concurrent_source.concurrent_source import ConcurrentSource
+from airbyte_cdk.sources.concurrent_source.concurrent_source_adapter import ConcurrentSourceAdapter
+
+DEFAULT_CONCURRENCY = 100
+MAX_CONCURRENCY = 100
+
+
+class FileBasedSource(ConcurrentSourceAdapter, ABC):
+    concurrency_level = MAX_CONCURRENCY
+    stream_reader_pool = []
+
     def __init__(
         self,
         stream_reader: AbstractFileBasedStreamReader,
         spec_class: Type[AbstractFileBasedSpec],
-        catalog_path: Optional[str] = None,
+        catalog: Optional[ConfiguredAirbyteCatalog],
+        config: Optional[Mapping[str, Any]],
+        state: Optional[TState],
         availability_strategy: Optional[AbstractFileBasedAvailabilityStrategy] = None,
         discovery_policy: AbstractDiscoveryPolicy = DefaultDiscoveryPolicy(),
         parsers: Mapping[Type[Any], FileTypeParser] = default_parsers,
@@ -41,14 +60,28 @@ class FileBasedSource(AbstractSource, ABC):
     ):
         self.stream_reader = stream_reader
         self.spec_class = spec_class
+        self.config = config
+        self.catalog = catalog
+        self.state = state
         self.availability_strategy = availability_strategy or DefaultFileBasedAvailabilityStrategy(stream_reader)
         self.discovery_policy = discovery_policy
         self.parsers = parsers
         self.validation_policies = validation_policies
-        catalog = self.read_catalog(catalog_path) if catalog_path else None
         self.stream_schemas = {s.stream.name: s.stream.json_schema for s in catalog.streams} if catalog else {}
         self.cursor_cls = cursor_cls
-        self.logger = logging.getLogger(f"airbyte.{self.name}")
+        self.logger = init_logger(f"airbyte.{self.name}")
+        self._message_repository = None
+        concurrent_source = ConcurrentSource.create(
+            DEFAULT_CONCURRENCY, DEFAULT_CONCURRENCY // 2, self.logger, self._slice_logger, self.message_repository
+        )
+        self._state = None
+        super().__init__(concurrent_source)
+
+    @property
+    def message_repository(self) -> Union[None, MessageRepository]:
+        if self._message_repository is None:
+            self._message_repository = InMemoryMessageRepository(Level(AirbyteLogFormatter.level_mapping[self.logger.level]))
+        return self._message_repository
 
     def check_connection(self, logger: logging.Logger, config: Mapping[str, Any]) -> Tuple[bool, Optional[Any]]:
         """
@@ -90,10 +123,43 @@ class FileBasedSource(AbstractSource, ABC):
         """
         Return a list of this source's streams.
         """
+        file_based_streams = self._get_file_based_streams(config)
+        state_manager = ConnectorStateManager(stream_instance_map={s.name: s for s in file_based_streams}, state=self.state)
+
+        configured_streams = []
+
+        for stream in file_based_streams:
+            sync_mode = self._get_sync_mode_from_catalog(stream)
+            if sync_mode == SyncMode.full_refresh:
+                cursor = NoopCursor()
+                state = None
+            else:
+                cursor_field_key = stream.cursor_field or ""
+                if not isinstance(cursor_field_key, str):
+                    raise AssertionError(f"A string cursor field key is required, but got {cursor_field_key}.")
+                cursor_field = CursorField(cursor_field_key)
+                state = stream.state_converter.get_concurrent_stream_state(
+                    cursor_field, config.get("start_date"), state_manager.get_stream_state(stream.name, stream.namespace)
+                )
+                cursor = ConcurrentCursor(
+                    stream.name,
+                    stream.namespace,
+                    state,
+                    self.message_repository,
+                    state_manager,
+                    stream.state_converter,
+                    cursor_field,
+                    None,  # For file-based sources, each file is one slice
+                )
+
+            configured_streams.append(FileBasedStreamFacade.create_from_stream(stream, self, self.logger, state, cursor))
+        return configured_streams
+
+    def _get_file_based_streams(self, config: Mapping[str, Any]) -> List[AbstractFileBasedStream]:
         try:
             parsed_config = self._get_parsed_config(config)
             self.stream_reader.config = parsed_config
-            streams: List[Stream] = []
+            streams: List[AbstractFileBasedStream] = []
             for stream_config in parsed_config.streams:
                 self._validate_input_schema(stream_config)
                 streams.append(
@@ -112,6 +178,13 @@ class FileBasedSource(AbstractSource, ABC):
 
         except ValidationError as exc:
             raise ConfigValidationError(FileBasedSourceError.CONFIG_VALIDATION_ERROR) from exc
+
+    def _get_sync_mode_from_catalog(self, stream: Stream) -> Optional[SyncMode]:
+        if self.catalog:
+            for catalog_stream in self.catalog.streams:
+                if stream.name == catalog_stream.stream.name:
+                    return catalog_stream.sync_mode
+        return None
 
     def read(
         self,

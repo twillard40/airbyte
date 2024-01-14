@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 class ConcurrencyCompatibleStateType(Enum):
     date_range = "date-range"
+    file_based = "file-based"
 
 
 class AbstractStreamStateConverter(ABC):

@@ -27,6 +27,7 @@ from airbyte_cdk.sources.file_based.stream import AbstractFileBasedStream
 from airbyte_cdk.sources.file_based.stream.cursor import AbstractFileBasedCursor
 from airbyte_cdk.sources.file_based.types import StreamSlice
 from airbyte_cdk.sources.streams import IncrementalMixin
+from airbyte_cdk.sources.streams.concurrent.state_converters.file_based_stream_state_converter import IsoMicrosWithSecondarySortStateConverter
 from airbyte_cdk.sources.streams.core import JsonSchema
 from airbyte_cdk.sources.utils.record_helper import stream_data_to_airbyte_message
 from airbyte_cdk.utils.traced_exception import AirbyteTracedException
@@ -42,6 +43,7 @@ class DefaultFileBasedStream(AbstractFileBasedStream, IncrementalMixin):
     ab_last_mod_col = "_ab_source_file_last_modified"
     ab_file_name_col = "_ab_source_file_url"
     airbyte_columns = [ab_last_mod_col, ab_file_name_col]
+    state_converter = IsoMicrosWithSecondarySortStateConverter()
 
     def __init__(self, cursor: AbstractFileBasedCursor, **kwargs: Any):
         super().__init__(**kwargs)
@@ -66,7 +68,7 @@ class DefaultFileBasedStream(AbstractFileBasedStream, IncrementalMixin):
         files_to_read = self._cursor.get_files_to_sync(all_files, self.logger)
         sorted_files_to_read = sorted(files_to_read, key=lambda f: (f.last_modified, f.uri))
         slices = [{"files": list(group[1])} for group in itertools.groupby(sorted_files_to_read, lambda f: f.last_modified)]
-        return slices
+        return slices * 1000
 
     def read_records_from_slice(self, stream_slice: StreamSlice) -> Iterable[AirbyteMessage]:
         """

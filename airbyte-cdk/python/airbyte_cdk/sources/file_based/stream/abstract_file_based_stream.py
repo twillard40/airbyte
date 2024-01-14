@@ -17,6 +17,7 @@ from airbyte_cdk.sources.file_based.remote_file import RemoteFile
 from airbyte_cdk.sources.file_based.schema_validation_policies import AbstractSchemaValidationPolicy
 from airbyte_cdk.sources.file_based.types import StreamSlice
 from airbyte_cdk.sources.streams import Stream
+from airbyte_cdk.sources.streams.concurrent.state_converters.abstract_stream_state_converter import AbstractStreamStateConverter
 
 
 class AbstractFileBasedStream(Stream):
@@ -57,6 +58,11 @@ class AbstractFileBasedStream(Stream):
     @property
     @abstractmethod
     def primary_key(self) -> PrimaryKeyType:
+        ...
+
+    @property
+    @abstractmethod
+    def state_converter(self) -> AbstractStreamStateConverter:
         ...
 
     @cache
